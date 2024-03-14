@@ -1,25 +1,42 @@
-import React from 'react';
-import logo from './logo.svg';
 import './App.css';
+import {useEffect} from "react";
+import PriceStore from "./store/PriceStore";
+import Calculator from "./components/Calculator";
 
 function App() {
+
+  useEffect(() => {
+    const ws = new WebSocket('wss://stream.binance.com:9443/ws/!ticker@arr');
+
+    ws.onopen = () => {
+      console.log('WebSocket connected');
+    };
+
+    ws.onmessage = (event) => {
+      const tickers = JSON.parse(event.data);
+      const ethusdtTicker = tickers.find((ticker: any) => ticker.s === 'ETHUSDT');
+      if (ethusdtTicker) {
+        const sellPrice = ethusdtTicker.b
+        const buyPrice = ethusdtTicker.a
+
+        PriceStore.setSellPrice(sellPrice)
+        PriceStore.setBuyPrice(buyPrice)
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, []);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <main className="App">
+      <Calculator/>
+    </main>
   );
 }
 
